@@ -2,12 +2,12 @@
 using UnityEditor;
 using System.Collections;
 
-namespace UMA
+namespace UnityMadeAwesome.UnityAutoSaver
 {
     public class ConfigWindow : EditorWindow
     {
-        [MenuItem(Data.PACKAGE_NAME + "/Configuation Window", priority = Data.WINDOW_CONFIG_PRIORITY)]
-        [MenuItem("Window/UMA Configuration")]
+        [MenuItem("Window/Unity Made Awesome/Autosaver")]
+
         static void OpenWindow()
         {
             ConfigWindow window = (ConfigWindow)EditorWindow.GetWindow(typeof(ConfigWindow));
@@ -19,41 +19,14 @@ namespace UMA
             EditorGUILayout.Space();
 
             // Autosave
-            Data.TransformEditingEnabled = EditorGUILayout.BeginToggleGroup("Transform Edit Enabled", Data.TransformEditingEnabled);
 
-            Data.SnappingEnabledByDefault = EditorGUILayout.Toggle("Snap By Default", Data.SnappingEnabledByDefault);
-            Data.TranslateSnapIncrement = EditorGUILayout.FloatField("Translate Snap Increment", Data.TranslateSnapIncrement);
-            Data.RotateSnapIncrement = EditorGUILayout.FloatField("Rotate Snap Increment", Data.RotateSnapIncrement);
-            Data.ScaleSnapIncrement = EditorGUILayout.FloatField("Scale Snap Increment", Data.ScaleSnapIncrement);
-
-            EditorGUILayout.Space();
-
-            Data.UseRInsteadOfT = EditorGUILayout.Toggle("'R' for Rotate", Data.UseRInsteadOfT);
-            Data.EnableMouseConfirmCancel = EditorGUILayout.Toggle("Enable Mouse (iffy)", Data.EnableMouseConfirmCancel);
-
+            Data.autoSaveEnabled = EditorGUILayout.BeginToggleGroup("Auto Save Enabled", Data.autoSaveEnabled);
+            Data.autoSaveFrequency = EditorGUILayout.FloatField("Frequency (minutes)", Data.autoSaveFrequency);
+            Data.savesToKeep = EditorGUILayout.IntField("Number of Saves", Data.savesToKeep);
             EditorGUILayout.EndToggleGroup();
 
             EditorGUILayout.Space();
 
-            Data.AutoSaveEnabled = EditorGUILayout.BeginToggleGroup("Auto Save Enabled", Data.AutoSaveEnabled);
-            Data.AutoSaveFrequency = EditorGUILayout.FloatField("Frequency (minutes)", Data.AutoSaveFrequency);
-            Data.SavesToKeep = EditorGUILayout.IntField("Number of Saves", Data.SavesToKeep);
-            EditorGUILayout.EndToggleGroup();
-
-            EditorGUILayout.Space();
-
-            Data.HidingEnabled = EditorGUILayout.BeginToggleGroup("Hide Objects Enabled", Data.HidingEnabled);
-            EditorGUILayout.EndToggleGroup();
-
-            EditorGUILayout.Space();
-
-            Data.ResetTransformsEnabled = EditorGUILayout.BeginToggleGroup("Reset Transform Enabled", Data.ResetTransformsEnabled);
-            EditorGUILayout.EndToggleGroup();
-
-            EditorGUILayout.Space();
-
-            Data.CameraControlEnabled = EditorGUILayout.BeginToggleGroup("Camera Control Enabled", Data.CameraControlEnabled);
-            EditorGUILayout.EndToggleGroup();
         }
 
         void OnLostFocus()

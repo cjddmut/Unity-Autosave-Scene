@@ -3,45 +3,43 @@ using UnityEditor;
 using System.Collections;
 using System.IO;
 
-namespace UMA
+namespace UnityMadeAwesome.UnityAutoSaver
 {
-    [InitializeOnLoad]
-    public class AutoSave : ScriptableObject
+[InitializeOnLoad]
+public class AutoSave : ScriptableObject
 {
 
     private const int TIME_BEFORE_SAVE = 30; // Seconds
 
-    private static double _TimeTilSave = 0;
-    private static bool _CanSave = false;
+    private static double timeTilSave = 0;
+    private static bool canSave = false;
 
     static AutoSave()
     {
-
-
-        EditorApplication.update = Update;
+        EditorApplication.update += Update;
 
         // So we don't save too often, we'll make sure TIME_BEFORE_SAVE time has passed before the first
         // auto save.
-        _TimeTilSave = EditorApplication.timeSinceStartup + TIME_BEFORE_SAVE;
+        timeTilSave = EditorApplication.timeSinceStartup + TIME_BEFORE_SAVE;
 
-        _CanSave = false;
+        canSave = false;
     }
 
     static void Update()
     {
         // Are we enabled?
-        if (!Data.AutoSaveEnabled || EditorApplication.currentScene == "")
+        if (!Data.autoSaveEnabled || EditorApplication.currentScene == "")
         {
             return;
         }
 
-        if (!_CanSave)
+        if (!canSave)
         {
-            if (EditorApplication.timeSinceStartup > _TimeTilSave)
+            if (EditorApplication.timeSinceStartup > timeTilSave)
             {
                 // Open it up! And set next auto save to 5 minutes.
-                _TimeTilSave = EditorApplication.timeSinceStartup + Data.AutoSaveFrequency * 60;
-                _CanSave = true;
+                timeTilSave = EditorApplication.timeSinceStartup + Data.autoSaveFrequency * 60;
+                canSave = true;
             }
 
             // Not allowed to save yet.
@@ -51,11 +49,11 @@ namespace UMA
         // Should we save?
         if (EditorApplication.isPlayingOrWillChangePlaymode || 
             EditorApplication.isCompiling || 
-            EditorApplication.timeSinceStartup > _TimeTilSave)
+            EditorApplication.timeSinceStartup > timeTilSave)
         {
             // SSSSSSSSAAAAAAAAAAAVVVVVVVVVVEEEEEEEEEEEE!
-            _CanSave = false;
-            _TimeTilSave = EditorApplication.timeSinceStartup + Data.AutoSaveFrequency * 60;
+            canSave = false;
+            timeTilSave = EditorApplication.timeSinceStartup + Data.autoSaveFrequency * 60;
 
             ScriptableObject autoSaveObj = null;
             string autosaveFolder;
@@ -107,7 +105,7 @@ namespace UMA
             }
             else
             {
-                string oldSceneName = dirPath + origSceneName.Insert(index, "_" + Data.SavesToKeep);
+                string oldSceneName = dirPath + origSceneName.Insert(index, "_" + Data.savesToKeep);
 
                 if (File.Exists(oldSceneName))
                 {
@@ -115,7 +113,7 @@ namespace UMA
                 }
 
                 // Go through and bump down the current files by an increment.
-                for (int i = Data.SavesToKeep - 1; i >= 0; i--)
+                for (int i = Data.savesToKeep - 1; i >= 0; i--)
                 {
                     oldSceneName = dirPath + origSceneName.Insert(index, "_" + i);
 
