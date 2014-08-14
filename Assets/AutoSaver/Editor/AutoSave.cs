@@ -9,22 +9,19 @@ namespace UnityMadeAwesome.UnityAutoSaver
 public class AutoSave : ScriptableObject
 {
 
-    private const int TIME_BEFORE_SAVE = 30; // Seconds
-
     private static double timeTilSave = 0;
-    private static bool canSave = false;
+
+    private const float TIME_TIL_FIRST_SAVE = 30f;
 
     static AutoSave()
     {
         EditorApplication.update += Update;
 
-        // So we don't save too often, we'll make sure TIME_BEFORE_SAVE time has passed before the first
-        // auto save.
-        timeTilSave = EditorApplication.timeSinceStartup + TIME_BEFORE_SAVE;
-
-        canSave = false;
+        // We'll save 30 seconds after start up, this is done because everything you play or compile it reinitializes the autosaver.
+        // If you're making lots of small tweaks and playing then autosave may never occur and you can lose a lot of progress.
+        timeTilSave = EditorApplication.timeSinceStartup + TIME_TIL_FIRST_SAVE;
     }
-
+     
     static void Update()
     {
         // Are we enabled?
@@ -33,26 +30,10 @@ public class AutoSave : ScriptableObject
             return;
         }
 
-        if (!canSave)
-        {
-            if (EditorApplication.timeSinceStartup > timeTilSave)
-            {
-                // Open it up! And set next auto save to 5 minutes.
-                timeTilSave = EditorApplication.timeSinceStartup + Data.autoSaveFrequency * 60;
-                canSave = true;
-            }
-
-            // Not allowed to save yet.
-            return;
-        }
-
         // Should we save?
-        if (EditorApplication.isPlayingOrWillChangePlaymode || 
-            EditorApplication.isCompiling || 
-            EditorApplication.timeSinceStartup > timeTilSave)
+        if (EditorApplication.timeSinceStartup > timeTilSave && !EditorApplication.isPlaying)
         {
             // SSSSSSSSAAAAAAAAAAAVVVVVVVVVVEEEEEEEEEEEE!
-            canSave = false;
             timeTilSave = EditorApplication.timeSinceStartup + Data.autoSaveFrequency * 60;
 
             ScriptableObject autoSaveObj = null;
