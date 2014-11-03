@@ -3,7 +3,8 @@
 
 <!---%=description%-->
 
-Autosaves the current scene being played every 5 minutes. Saves the last 5 autosaves in %Autosaver Location%/autosaves/%Scene Path%/%Scene Name%[1-5].unity.
+Ever have Unity3D crash on you causing you lose so hours of work? It can be tough to remember to save so this autosaver will do that for you. Autosaves every 5 minutes and keeps the last 5 saves.
+Saves the last 5 autosaves in %Autosaver Location%/autosaves/%Scene Path%/%Scene Name%_[1-5].unity.
 
 <!---%=obtain%-->
 
