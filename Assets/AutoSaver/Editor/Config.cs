@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-using UnityEditor;
-using System.Collections;
+﻿using UnityEditor;
 
 namespace UnityMadeAwesome.UnityAutoSaver
 {
@@ -21,20 +19,52 @@ namespace UnityMadeAwesome.UnityAutoSaver
         // Auto Save
         //
 
-        public static bool autoSaveEnabled = true;
         public static float autoSaveFrequency = 5f; // Minutes
         public static int savesToKeep = 5;
+
+        public static System.Action onAutoSaveEnabled;
+        public static System.Action onAutoSaveDisabled;
+
+        public static bool autoSaveEnabled
+        {
+            get
+            {
+                return _autoSaveEnabled;
+            }
+            set
+            {
+                if (_autoSaveEnabled != value)
+                {
+                    _autoSaveEnabled = value;
+
+                    if (_autoSaveEnabled)
+                    {
+                        if (onAutoSaveEnabled != null)
+                        {
+                            onAutoSaveEnabled();
+                        }
+                    }
+                    else
+                    {
+                        if (onAutoSaveDisabled != null)
+                        {
+                            onAutoSaveDisabled();
+                        }
+                    }
+                }
+            }
+        }
+
+        private static bool _autoSaveEnabled;
 
         static Data()
         {
             // Loaded up, load up da settings.
-            Data.LoadData();
+            LoadData();
         }
 
         public static void SaveData()
         {
-            // TODO: I bet there's a way to do this easier with SerializeObject, explore later. If not, consider a cool solution
-            //       using reflection later. This is currently a little unwieldy.
             EditorPrefs.SetBool(PACKAGE_NAME + " - AS", autoSaveEnabled);
             EditorPrefs.SetFloat(PACKAGE_NAME + " - AS Freq", autoSaveFrequency);
             EditorPrefs.SetInt(PACKAGE_NAME + " - AS Saves", savesToKeep);
