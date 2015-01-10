@@ -75,6 +75,7 @@ namespace UnityMadeAwesome.UnityAutoSaver
             // If the first key is missing then just assume we have no data to load and go with defaults.
             if (!EditorPrefs.HasKey(PACKAGE_NAME + " - AS"))
             {
+                autoSaveEnabled = true;
                 return;
             }
 
