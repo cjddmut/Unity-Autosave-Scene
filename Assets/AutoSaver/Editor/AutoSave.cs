@@ -1,113 +1,172 @@
 ﻿using UnityEngine;
 using UnityEditor;
-using System.Collections;
 using System.IO;
 
 namespace UnityMadeAwesome.UnityAutoSaver
 {
-[InitializeOnLoad]
-public class AutoSave : ScriptableObject
-{
-
-    private static double timeTilSave = 0;
-
-    private const float TIME_TIL_FIRST_SAVE = 30f;
-
-    static AutoSave()
+    [InitializeOnLoad]
+    public class AutoSave : ScriptableObject
     {
-        EditorApplication.update += Update;
+        private static double _lastSaveTime;
 
-        // We'll save 30 seconds after start up, this is done because everything you play or compile it reinitializes the autosaver.
-        // If you're making lots of small tweaks and playing then autosave may never occur and you can lose a lot of progress.
-        timeTilSave = EditorApplication.timeSinceStartup + TIME_TIL_FIRST_SAVE;
-    }
-     
-    static void Update()
-    {
-        // Are we enabled?
-        if (!Data.autoSaveEnabled || EditorApplication.currentScene == "")
+        private static string _currentScene;
+
+        private static string _autoSaveFolder;
+        private static string _autoSaveFile;
+        private static string _originalSceneName;
+        private static int _indexInSceneFile;
+
+        private const string SAVE_TIME_KEY = Data.PACKAGE_NAME + " LST";
+
+        static AutoSave()
         {
-            return;
+            if (Data.autoSaveEnabled)
+            {
+                Initialize();
+            }
+
+            Data.onAutoSaveEnabled += Initialize;
+            Data.onAutoSaveDisabled += Uninitialize;
         }
 
-        // Should we save?
-        if (EditorApplication.timeSinceStartup > timeTilSave && !EditorApplication.isPlaying)
+        private static void Initialize()
         {
-            // SSSSSSSSAAAAAAAAAAAVVVVVVVVVVEEEEEEEEEEEE!
-            timeTilSave = EditorApplication.timeSinceStartup + Data.autoSaveFrequency * 60;
+            EditorApplication.update += Update;
 
-            ScriptableObject autoSaveObj = null;
-            string autosaveFolder;
-
-            try
+            if (EditorPrefs.HasKey(SAVE_TIME_KEY))
             {
-                // Is this really how I have to do this to get the path to the autosave folder? This feel less ideal.
-                autoSaveObj = ScriptableObject.CreateInstance<AutoSave>();
-                autosaveFolder = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(autoSaveObj));
+                _lastSaveTime = EditorPrefs.GetFloat(SAVE_TIME_KEY);
             }
-            finally
+
+            if (_lastSaveTime > EditorApplication.timeSinceStartup)
             {
-                if (autoSaveObj != null)
+                _lastSaveTime = EditorApplication.timeSinceStartup;
+                EditorPrefs.SetFloat(SAVE_TIME_KEY, (float)_lastSaveTime);
+            }
+
+            NewScene(EditorApplication.currentScene);
+        }
+
+        private static void Uninitialize()
+        {
+            EditorApplication.update -= Update;
+        }
+
+        private static void NewScene(string newScene)
+        {
+            _currentScene = newScene;
+
+            if (_currentScene != "")
+            {
+                ScriptableObject autoSaveObj = null;
+                string autosaveFolder;
+
+                try
                 {
-                    ScriptableObject.DestroyImmediate(autoSaveObj);
+                    // Is this really how I have to do this to get the path to the autosave folder? This feel less ideal.
+                    autoSaveObj = CreateInstance<AutoSave>();
+                    autosaveFolder = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(autoSaveObj));
                 }
-            }
-
-            // May not work on mac?
-            autosaveFolder = autosaveFolder.Replace("Editor/AutoSave.cs", "AutoSaves/");
-
-            string[] pathSplit = EditorApplication.currentScene.Split('/');
-            string sceneName = pathSplit[pathSplit.Length - 1];
-            pathSplit[pathSplit.Length - 1] = "";
-
-            string dirPath = autosaveFolder + string.Join("/", pathSplit);
-
-            DirectoryInfo dir = new DirectoryInfo(dirPath);
-
-            if (!dir.Exists)
-            {
-                // TODO: Unity will complain once on creation about the folder, be nice to remove that.
-                dir.Create();
-            }
-
-            int index = sceneName.IndexOf(".unity");
-            string origSceneName = sceneName;
-
-            // I want to try saving before bumping files down so we'll save as _0 and just bump to _1.
-            sceneName = sceneName.Insert(index, "_0");
-
-            string filePath = dirPath + sceneName;
-
-            bool success = EditorApplication.SaveScene(filePath, true);
-
-            if (!success)
-            {
-                Debug.LogWarning(Data.PACKAGE_NAME + " - Scene auto save failed.");
-            }
-            else
-            {
-                string oldSceneName = dirPath + origSceneName.Insert(index, "_" + Data.savesToKeep);
-
-                if (File.Exists(oldSceneName))
+                finally
                 {
-                    File.Delete(oldSceneName);
-                }
-
-                // Go through and bump down the current files by an increment.
-                for (int i = Data.savesToKeep - 1; i >= 0; i--)
-                {
-                    oldSceneName = dirPath + origSceneName.Insert(index, "_" + i);
-
-                    if (!File.Exists(oldSceneName))
+                    if (autoSaveObj != null)
                     {
-                        continue;
+                        DestroyImmediate(autoSaveObj);
                     }
-                    string newSceneName = dirPath + origSceneName.Insert(index, "_" + (i + 1));
-                    File.Copy(oldSceneName, newSceneName);
-                    File.Delete(oldSceneName);
+                }
+
+                autosaveFolder = autosaveFolder.Replace("Editor/AutoSave.cs", "AutoSaves/");
+
+                string[] pathSplit = newScene.Split('/');
+                string sceneName = pathSplit[pathSplit.Length - 1];
+                pathSplit[pathSplit.Length - 1] = "";
+
+                _autoSaveFolder = autosaveFolder + string.Join("/", pathSplit);
+
+                _indexInSceneFile = sceneName.IndexOf(".unity");
+                _originalSceneName = sceneName;
+
+                // I want to try saving before bumping files down so we'll save as _0 and just bump to _1.
+                sceneName = sceneName.Insert(_indexInSceneFile, "_0");
+
+                _autoSaveFile = _autoSaveFolder + sceneName;
+            }
+        }
+
+        private static void Update()
+        {
+            // We reset our last time saved if the scene changes.
+            if (EditorApplication.currentScene != _currentScene)
+            {
+                _lastSaveTime = EditorApplication.timeSinceStartup;
+                NewScene(EditorApplication.currentScene);
+            }
+
+            if (_currentScene == "")
+            {
+                return;
+            }
+
+            if (EditorApplication.timeSinceStartup > (_lastSaveTime + Data.autoSaveFrequency * 60) && !EditorApplication.isPlaying)
+            {
+                _lastSaveTime = EditorApplication.timeSinceStartup;
+                EditorPrefs.SetFloat(SAVE_TIME_KEY, (float)_lastSaveTime);
+
+                DirectoryInfo dir = new DirectoryInfo(_autoSaveFolder);
+
+                if (!dir.Exists)
+                {
+                    // TODO: Unity will complain once on creation about the folder, be nice to remove that.
+                    dir.Create();
+                }
+
+                bool success = EditorApplication.SaveScene(_autoSaveFile, true);
+
+                if (!success)
+                {
+                    Debug.LogWarning(Data.PACKAGE_NAME + " - Scene auto save failed.");
+                }
+                else
+                {
+                    string oldSceneName = _autoSaveFolder + _originalSceneName.Insert(_indexInSceneFile, "_" + Data.savesToKeep);
+                    string oldMetaFile = oldSceneName + ".meta";
+
+                    if (File.Exists(oldSceneName))
+                    {
+                        File.Delete(oldSceneName);
+                    }
+
+                    if (File.Exists((oldMetaFile)))
+                    {
+                        File.Delete(oldMetaFile);
+                    }
+
+                    // Go through and bump down the current files by an increment.
+                    for (int i = Data.savesToKeep - 1; i >= 0; i--)
+                    {
+                        oldSceneName = _autoSaveFolder + _originalSceneName.Insert(_indexInSceneFile, "_" + i);
+
+                        if (!File.Exists(oldSceneName))
+                        {
+                            continue;
+                        }
+
+                        string newSceneName = _autoSaveFolder + _originalSceneName.Insert(_indexInSceneFile, "_" + (i + 1));
+                        File.Copy(oldSceneName, newSceneName);
+                        File.Delete(oldSceneName);
+
+                        // Move the meta file as well.
+                        oldMetaFile = oldSceneName + ".meta";
+
+                        if (File.Exists(oldMetaFile))
+                        {
+                            string newMetaFile = _autoSaveFolder + _originalSceneName.Insert(_indexInSceneFile, "_" + (i + 1)) + ".meta";
+                            File.Copy(oldMetaFile, newMetaFile);
+                            File.Delete(oldMetaFile);
+                        }
+                    }
                 }
             }
         }
     }
-}
 }

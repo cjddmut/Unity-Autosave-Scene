@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-using UnityEditor;
-using System.Collections;
+﻿using UnityEditor;
 
 namespace UnityMadeAwesome.UnityAutoSaver
 {
@@ -10,7 +8,7 @@ namespace UnityMadeAwesome.UnityAutoSaver
 
         static void OpenWindow()
         {
-            ConfigWindow window = (ConfigWindow)EditorWindow.GetWindow(typeof(ConfigWindow));
+            ConfigWindow window = (ConfigWindow)GetWindow(typeof(ConfigWindow));
             window.title = Data.PACKAGE_NAME + " Config";
         }
 
